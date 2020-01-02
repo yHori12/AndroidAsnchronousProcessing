@@ -1,5 +1,6 @@
 package com.y_hori.androidasnchronousprocessing
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,15 +10,23 @@ import kotlinx.coroutines.withContext
 
 class MainViewModel : ViewModel() {
 
-    private val repository = NewsRepo(NewsApiService.newsApi)
+    private val repository = UserRepository(UserApiService.userApi)
 
-    val liveData = MutableLiveData<MutableList<Article>>()
+    private val _userList = MutableLiveData<MutableList<User>>()
+    val userList: LiveData<MutableList<User>>
+        get() = _userList
 
-    fun getApi() {
+    init {
+        fetchUser()
+    }
+
+    private fun fetchUser() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val user = repository.getLatestNews()
-                liveData.postValue(user)
+                val user = repository.fetchUserList(1, 2)
+                user?.let {
+                    _userList.postValue(user)
+                }
             }
         }
     }

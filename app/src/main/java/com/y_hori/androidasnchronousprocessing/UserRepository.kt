@@ -4,37 +4,13 @@ import android.util.Log
 import retrofit2.Response
 import java.io.IOException
 
-class NewsRepo(private val apiInterface: NewsApiInterface) : BaseRepository() {
-    suspend fun getLatestNews(): MutableList<Article>? {
-        val result = newsApiOutput(
-            call = { apiInterface.fetchLatestNewsAsync("Nigeria", "publishedAt") },
-            error = "Error fetching news")
-        var output: MutableList<Article>? = null
-        when (result) {
-            is NetworkResult.Success ->
-                output = result.output.articles.toMutableList()
-            is NetworkResult.Error ->
-                Log.e("Error", "${result.exception}")
-        }
-        return output
-    }
+sealed class NetworkResult<out T : Any> {
+    data class Success<out T : Any>(val output: T) : NetworkResult<T>()
+    data class Error(val exception: Exception) : NetworkResult<Nothing>()
 }
 
-
 open class BaseRepository {
-    suspend fun <T : Any> safeApiCall(call: suspend () -> Response<T>, error: String): T? {
-        val result = newsApiOutput(call, error)
-        var output: T? = null
-        when (result) {
-            is NetworkResult.Success ->
-                output = result.output
-            is NetworkResult.Error -> Log.e("Error", "${result.exception}")
-        }
-        return output
-
-    }
-
-    suspend fun <T : Any> newsApiOutput(
+    suspend fun <T : Any> apiOutput(
         call: suspend () -> Response<T>,
         error: String
     ): NetworkResult<T> {
@@ -47,9 +23,22 @@ open class BaseRepository {
 }
 
 
-sealed class NetworkResult<out T : Any> {
-    data class Success<out T : Any>(val output: T) : NetworkResult<T>()
-    data class Error(val exception: Exception) : NetworkResult<Nothing>()
+class UserRepository(private val apiInterface: UserApiInterface) : BaseRepository() {
+    suspend fun fetchUserList(page: Int, perPage: Int): MutableList<User>? {
+        val result = apiOutput(
+            call = { apiInterface.fetchUser(page, perPage) },
+            error = "calling fetchUserList failed"
+        )
+        var output: MutableList<User>? = null
+
+        when (result) {
+            is NetworkResult.Success ->
+                output = result.output
+            is NetworkResult.Error ->
+                Log.d("Error", "${result.exception}")
+        }
+        return output
+    }
 }
 
 
